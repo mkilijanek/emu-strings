@@ -5,10 +5,12 @@ import uuid
 from typing import List, Tuple, Optional
 
 from docker import DockerClient
+from docker.errors import DockerException
 from docker.models.containers import Container
 
 from ..language import Language
 from ..sample import Sample
+from ..utils.retry import retry_with_backoff
 
 LOCAL_EMULATION_PATH = "/app/results/emulation/"
 
@@ -70,17 +72,17 @@ class Emulator(object):
         """
         return language in cls.SUPPORTED_LANGUAGES
 
-    def start(self,
-              docker_client: DockerClient,
-              sample: Sample,
-              options: dict):
+    @retry_with_backoff(
+        max_retries=3,
+        backoff_seconds=1.0,
+        max_delay=60.0,
+        exceptions=(DockerException, Exception),
+    )
+    def _run_container(self, docker_client: DockerClient, sample: Sample, options: dict):
         """
-        Starts analysis using emulator
+        Internal method to run Docker container with retry logic.
         """
-        self.sample = sample
-        sample.store(self.workdir)
-
-        self.container = docker_client.containers.run(
+        return docker_client.containers.run(
             self.IMAGE_NAME,
             detach=True,
             dns=['127.0.0.1'],
@@ -102,6 +104,22 @@ class Emulator(object):
                 }
             }
         )
+
+    def start(self,
+              docker_client: DockerClient,
+              sample: Sample,
+              options: dict):
+        """
+        Starts analysis using emulator with automatic retry on transient failures.
+        """
+        self.sample = sample
+        sample.store(self.workdir)
+
+        try:
+            self.container = self._run_container(docker_client, sample, options)
+        except Exception as e:
+            logging.error(f"Failed to start emulator container after retries: {e}")
+            raise
 
     def join(self) -> bool:
         try:
