@@ -9,6 +9,7 @@ from pymongo import MongoClient
 
 from .results import ResultsStore
 from .sample import Sample
+from .validation import validate_uuid, validate_workdir_path, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,15 @@ class Analysis(object):
         Load existing instance
         """
 
+        # Validate UUID format to prevent path traversal
+        validate_uuid(aid, "aid")
         self.aid = aid
+
+        # Validate workdir is within expected path
+        try:
+            validate_workdir_path(self.workdir, self.ANALYSIS_PATH)
+        except ValidationError as e:
+            raise IOError("Invalid analysis path: {}".format(e))
 
         if not os.path.isdir(self.workdir):
             raise IOError("Analysis path {} doesn't exist".format(aid))
@@ -97,10 +106,24 @@ class Analysis(object):
         entry = Analysis.db_collection().find_one({
             "sha256": sample.sha256
         })
-        return entry and Analysis(aid=entry["aid"])
+        if entry:
+            try:
+                validate_uuid(entry["aid"], "aid")
+                return Analysis(aid=entry["aid"])
+            except ValidationError:
+                logging.error("Corrupted analysis with invalid UUID: %s", entry.get("aid"))
+                return None
+        return None
 
     @staticmethod
     def get_analysis(aid):
+        # Validate UUID format before querying
+        try:
+            validate_uuid(aid, "aid")
+        except ValidationError:
+            logging.warning("Invalid UUID format in get_analysis: %s", aid)
+            return None
+
         entry = Analysis.db_collection().find_one({
             "aid": aid})
         return entry and Analysis(aid=aid)

@@ -2,6 +2,9 @@
   <img src="src/web/src/logo.jpg">
 </p>
 
+[![CI](https://github.com/mkilijanek/emu-strings/actions/workflows/ci.yml/badge.svg)](https://github.com/mkilijanek/emu-strings/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/mkilijanek/emu-strings/branch/master/graph/badge.svg)](https://codecov.io/gh/mkilijanek/emu-strings)
+
 **Emu-strings** - JScript/VBScript malware analyzer based on native Windows Script Host engine.
 
 The main idea is to provide a tool which reveal all useful *strings* that occur during script execution. In most cases, strings are heavily obfuscated and evaluated at runtime. These are including useful IoCs such as distribution site URLs, OLE Automation object identifiers, eval'ed code snippets etc.

@@ -4,6 +4,7 @@ import re
 
 from urllib.parse import urlparse
 from .sample import Sample
+from .validation import sanitize_identifier, ValidationError
 
 really_printable = '0123456789abcdefghijklmnopqrstuvwxyz' \
                    'ABCDEFGHIJKLMNOPQRSTUVWXYZ!"#$%&\'()' \
@@ -53,10 +54,26 @@ class ResultsStore(object):
         return element_path
 
     def load_element(self, key, identifier, default=b""):
+        # Validate identifier to prevent path traversal
+        try:
+            sanitize_identifier(identifier)
+        except ValidationError:
+            return default
+
         key_path = self._get_keypath(key)
         if key_path is None:
             return default
         element_path = os.path.join(key_path, identifier)
+
+        # Ensure the resulting path is still within workdir
+        try:
+            abs_path = os.path.abspath(element_path)
+            abs_workdir = os.path.abspath(self.workdir)
+            if not abs_path.startswith(abs_workdir + os.sep) and abs_path != abs_workdir:
+                return default
+        except Exception:
+            return default
+
         try:
             with open(element_path, "rb") as f:
                 return f.read()
@@ -67,6 +84,16 @@ class ResultsStore(object):
         key_path = self._get_keypath(key)
         if key_path is None:
             return
+
+        # Validate key_path is within workdir
+        try:
+            abs_key_path = os.path.abspath(key_path)
+            abs_workdir = os.path.abspath(self.workdir)
+            if not abs_key_path.startswith(abs_workdir + os.sep) and abs_key_path != abs_workdir:
+                return
+        except Exception:
+            return
+
         for identifier in os.listdir(key_path):
             yield identifier
 
