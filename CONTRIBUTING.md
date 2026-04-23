@@ -28,7 +28,9 @@ Thank you for your interest in contributing to emu-strings! This document provid
 
 4. Install pre-commit hooks:
    ```bash
+   pip install pre-commit
    pre-commit install
+   pre-commit install --hook-type commit-msg
    ```
 
 ## Development Workflow

@@ -1,0 +1,25 @@
+# Build directories
+src/web/build/
+src/web/node_modules/
+dist/
+build/
+
+# Coverage reports
+coverage/
+htmlcov/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
