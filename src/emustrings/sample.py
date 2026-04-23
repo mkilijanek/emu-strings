@@ -11,7 +11,7 @@ class Sample(object):
     def __init__(self, code, name=None, language=None):
         self.code = code
 
-        self.md5 = hashlib.md5(code).hexdigest()
+        # SHA256 used for sample identification (MD5 removed - cryptographically broken)
         self.sha256 = hashlib.sha256(code).hexdigest()
         self.name = (name and os.path.basename(name)) or self.sha256
 
@@ -57,7 +57,6 @@ class Sample(object):
     def to_dict(self):
         return {
             "name": self.name,
-            "md5": self.md5,
             "sha256": self.sha256,
             "language": str(self.language)
         }
