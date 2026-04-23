@@ -16,6 +16,12 @@ services:
       - type: volume
         source: results
         target: /app/results
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
   emu-daemon:
     image: "psrok1/emu-strings-daemon:${TAG:-latest}"
     build:
@@ -43,6 +49,12 @@ services:
       - type: volume
         source: mongodb
         target: /data/db
+    healthcheck:
+      test: echo 'db.runCommand({serverStatus: 1}).ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   redis:
     image: redis:alpine
   dind:
